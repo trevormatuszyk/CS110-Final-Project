@@ -1,10 +1,11 @@
 import math
 import pygame
 
+#block dimensions
 block_width = 23
 block_height = 15
 
-
+#RGB color values
 white = (255, 255, 255)
 black = (0, 0, 0)
 red = (255, 0, 0)
@@ -18,7 +19,7 @@ class Ball(pygame.sprite.Sprite):
     def __init__(self, player):
 
         self.y = 180
-        self.speed = 10 #starting speed (in pixels per second)
+        self.speed = 5 #starting speed (in pixels per cycle)
         self.direction = 200 #in degrees
         self.player = player
         self.width = 10
@@ -43,7 +44,7 @@ class Ball(pygame.sprite.Sprite):
         if (player == 1):
             self.x = 0
         else:
-            self.x = self.screenwidth/2
+            self.x = self.screenwidth/2 + block_width
 
         self.rect.x = self.x
         self.rect.y = self.y
@@ -53,6 +54,8 @@ class Ball(pygame.sprite.Sprite):
         self.direction -= diff
 
     def update(self):
+
+        #angles are handles in radians, must convert
         direction_radians = math.radians(self.direction)
 
         # Change the position (x and y) according to the speed and direction
@@ -76,17 +79,17 @@ class Ball(pygame.sprite.Sprite):
                 self.x = 1
         else:
 
-            if(self.x <= self.screenwidth/2):
+            if(self.x <= self.screenwidth/2 + block_width):
                 self.direction = (360 - self.direction) % 360
-                self.x = 1 + self.screenwidth/2
+                self.x = 1 + self.screenwidth/2 + block_width
 
 
         # Do we bounce of the right side of the screen?
         if(self.player == 1):
 
-            if(self.x > self.screenwidth/2 - self.width):
+            if(self.x > self.screenwidth/2 - self.width - block_width):
                 self.direction = (360 - self.direction) % 360
-                self.x = self.screenwidth/2 - self.width - 1
+                self.x = self.screenwidth/2 - self.width - 1 - block_width
 
         else:
             if(self.x > self.screenwidth - self.width):
@@ -98,6 +101,13 @@ class Ball(pygame.sprite.Sprite):
             return True
         else:
             return False
+
+    def speedUp(self, speed):
+        #update speed:
+        if (self.player == 1):
+            self.speed = speed
+        else:
+            self.speed = speed
 
 class Block(pygame.sprite.Sprite):
 
@@ -129,40 +139,18 @@ class Paddle(pygame.sprite.Sprite):
         self.screenheight = pygame.display.get_surface().get_height()
         self.screenwidth = pygame.display.get_surface().get_width()
 
-        if (player == 1):
-            self.speed = 10
-        else:
-            self.speed = 10
+        self.speed = 5
 
         if(player == 1):
 
-            self.rect.x = self.screenwidth/4 - self.width
+            self.rect.x = block_width + self.screenwidth/4 - self.width
             self.rect.y = self.screenheight - self.height
 
         elif(player == 2):
 
-            self.rect.x = self.screenwidth*3/4 - self.width
+            self.rect.x = 2*block_width + self.screenwidth*3/4 - self.width
             self.rect.y = self.screenheight - self.height
 
-    def update(self):
-        # Make sure we don't push the player paddle
-        # off the right side of the screen
-        if(player == 1):
-            if self.rect.x > self.screenwidth/2 - self.width:
-                self.rect.x = self.screenwidth/2 - self.width
-
-        else:
-            if self.rect.x > self.screenwidth - self.width:
-                self.rect.x = self.screenwidth - self.width
-
-        #make sure we don't push the paddle off the left side of the screen
-        if(player == 1):
-            if(self.rect.x < 0):
-                self.rect.x = 0
-
-        else:
-            if(self.rect.x < self.screenwidth/2):
-                self.rect.x = self.screenwidth/2
 
     def move(self, dir):
         #move player left
@@ -173,17 +161,17 @@ class Paddle(pygame.sprite.Sprite):
                 else:
                     self.rect.x = 0
             else:
-                if(self.rect.x - self.speed >= self.screenwidth/2):
+                if(self.rect.x - self.speed >= self.screenwidth/2 + block_width):
                     self.rect.x -= self.speed
                 else:
-                    self.rect.x = self.screenwidth/2
+                    self.rect.x = self.screenwidth/2 + block_width
 
         if (dir == "right"):
             if (self.player == 1):
-                if(self.rect.x + self.speed <= self.screenwidth/2 - self.width):
+                if(self.rect.x + self.speed <= self.screenwidth/2 - self.width - block_width):
                     self.rect.x += self.speed
                 else:
-                    self.rect.x = self.screenwidth/2 - self.width
+                    self.rect.x = self.screenwidth/2 - self.width - block_width
 
             else:
                 if(self.rect.x + self.speed <= self.screenwidth - self.width):
@@ -191,6 +179,13 @@ class Paddle(pygame.sprite.Sprite):
                 else:
                     self.rect.x = self.screenwidth - self.width
         #move the player left or right
+
+    def speedUp(self, speed):
+        #update speed:
+        if (self.player == 1):
+            self.speed = speed
+        else:
+            self.speed = speed
 
 class Game:
 
@@ -206,6 +201,7 @@ class Game:
         background = pygame.Surface(screen.get_size())
         screenheight = pygame.display.get_surface().get_height()
         screenwidth = pygame.display.get_surface().get_width()
+        pygame.key.set_repeat(2, 10)
 
         #define sprite groups
         blocks1 = pygame.sprite.Group()
@@ -218,10 +214,12 @@ class Game:
         player1 = Paddle(1)
         allsprites.add(player1)
         players.add(player1)
+        player1_speed = 5
 
         player2 = Paddle(2)
         allsprites.add(player2)
         players.add(player2)
+        player2_speed = 5
 
         #create balls
         ball1 = Ball(1)
@@ -237,7 +235,7 @@ class Game:
         top = 80
 
         # Number of blocks to create
-        blockcount = 16
+        blockcount = 15
 
         for row in [red, blue, green, yellow, magenta]:
             for column in range(0, blockcount):
@@ -245,7 +243,7 @@ class Game:
                 block = Block(1, row, column * (block_width + 2) + 1, top)
                 blocks1.add(block)
                 allsprites.add(block)
-                block = Block(2, row, screenwidth/2 +  column * (block_width + 2) + 1, top)
+                block = Block(2, row, block_width + screenwidth/2 +  column * (block_width + 2) + 1, top)
                 blocks2.add(block)
                 allsprites.add(block)
             #move next row down
@@ -253,6 +251,15 @@ class Game:
 
         #create clock to limit speed
         clock = pygame.time.Clock()
+
+        #create timer to keep track of highscores
+        timer = 0
+
+        #sends a speedup event every  5 seconds (5000 milliseconds)
+        pygame.time.set_timer(pygame.JOYBUTTONUP, 5000)
+
+        #sends an event every 10 milliseconds for the timer
+        pygame.time.set_timer(pygame.JOYBUTTONDOWN, 10)
 
         # Is the game over?
         game_over = False
@@ -262,30 +269,46 @@ class Game:
 
         while (exit_program == False):
 
-            #set fps to 30
-            clock.tick(30)
+            #set fps to 60
+            clock.tick(60)
 
             #clear screen
             screen.fill(black)
+
+            #draw dividing line
+            pygame.draw.line(screen, white, (screenwidth/2 - block_width, 0), (screenwidth/2 - block_width, screenheight), 1)
+            pygame.draw.line(screen, white, (screenwidth/2 + block_width, 0), (screenwidth/2 + block_width, screenheight), 1)
 
             # Process the events in the game
             for event in pygame.event.get():
                 if(event.type == pygame.QUIT):
                     exit_program = True
-                elif(event.type == pygame.KEYDOWN):
-                    if(event.key == ord("a")):
-                        player1.move("left")
-                    if(event.key == ord("d")):
-                        player1.move("right")
-                    if(event.key == ord("j")):
-                        player2.move("left")
-                    if(event.key == ord("l")):
-                        player2.move("right")
+                if(event.type == pygame.JOYBUTTONUP):
+                    player1_speed += 1
+                    player2_speed += 1
 
-            #update ball if game is not over
+
+            #return an array of all keys pressed during each cycle
+            pressed = pygame.key.get_pressed()
+
+            #determine which keys are pressed and move accordingly
+            if(pressed[ord("a")] == 1):
+                player1.move("left")
+            if(pressed[ord("d")] == 1):
+                player1.move("right")
+            if(pressed[ord("j")] == 1):
+                player2.move("left")
+            if(pressed[ord("l")] == 1):
+                player2.move("right")
+
+            #update ball and speed if game is not over
             if (game_over == False):
                 ball1.update()
                 ball2.update()
+                player1.speedUp(player1_speed)
+                player2.speedUp(player2_speed)
+                ball1.speedUp(player1_speed)
+                ball2.speedUp(player2_speed)
 
             if game_over:
                 text = font.render("Game Over", True, white)
