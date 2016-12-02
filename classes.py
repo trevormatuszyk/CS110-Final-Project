@@ -1,5 +1,6 @@
 import math
 import pygame
+import random
 
 #block dimensions
 block_width = 23
@@ -96,7 +97,8 @@ class Ball(pygame.sprite.Sprite):
                 self.direction = (360 - self.direction) % 360
                 self.x = self.screenwidth - self.width - 1
 
-        # fall off the bottom of the screen?
+    def isDead(self):
+            # fall off the bottom of the screen?
         if(self.y > 600):
             return True
         else:
@@ -108,6 +110,14 @@ class Ball(pygame.sprite.Sprite):
             self.speed = speed
         else:
             self.speed = speed
+
+    def respawn(self):
+        self.y = 180
+        self.direction = 200
+        if(self.player == 1):
+            self.x = 0
+        else:
+            self.x = self.screenwidth/2 + block_width
 
 class Block(pygame.sprite.Sprite):
 
@@ -198,6 +208,7 @@ class Game:
         screen = pygame.display.set_mode([800, 600])
         pygame.display.set_caption('Steven A Moore')
         font = pygame.font.Font(None, 36)
+        font2 = pygame.font.Font(None, 64)
         background = pygame.Surface(screen.get_size())
         screenheight = pygame.display.get_surface().get_height()
         screenwidth = pygame.display.get_surface().get_width()
@@ -232,22 +243,32 @@ class Game:
 
         #create blocks
         # The top of the block (y position)
-        top = 80
+        top1 = 80
+        top2 = 80
 
         # Number of blocks to create
         blockcount = 15
 
-        for row in [red, blue, green, yellow, magenta]:
+        colors1 = [red, blue, green, yellow, magenta]
+        random.shuffle(colors1)
+        colors2 = [red, blue, green, yellow, magenta]
+        random.shuffle(colors2)
+
+        for row in colors1:
             for column in range(0, blockcount):
                 # Create a block (color,x,y)
-                block = Block(1, row, column * (block_width + 2) + 1, top)
+                block = Block(1, row, column * (block_width + 2) + 1, top1)
                 blocks1.add(block)
                 allsprites.add(block)
-                block = Block(2, row, block_width + screenwidth/2 +  column * (block_width + 2) + 1, top)
+            top1 += block_height + 2
+
+        for row in colors2:
+            for column in range(0, blockcount):
+                block = Block(2, row, block_width + screenwidth/2 +  column * (block_width + 2) + 1, top2)
                 blocks2.add(block)
                 allsprites.add(block)
             #move next row down
-            top += block_height + 2
+            top2 += block_height + 2
 
         #create clock to limit speed
         clock = pygame.time.Clock()
@@ -255,11 +276,23 @@ class Game:
         #create timer to keep track of highscores
         timer = 0
 
+        #create respawn timers
+        respawn_timer_1 = 0
+        respawn_timer_2 = 0
+
         #sends a speedup event every  5 seconds (5000 milliseconds)
-        pygame.time.set_timer(pygame.JOYBUTTONUP, 5000)
+        SPEEDUP = pygame.USEREVENT+1
+        pygame.time.set_timer(SPEEDUP, 10000)
 
         #sends an event every 10 milliseconds for the timer
-        pygame.time.set_timer(pygame.JOYBUTTONDOWN, 10)
+        TIMER = pygame.USEREVENT+2
+        pygame.time.set_timer(TIMER, 10)
+
+        #define timers for ball respawn
+        RESPAWNTIMER1 = pygame.USEREVENT + 3
+        RESPAWNTIMER2 = pygame.USEREVENT + 4
+        timer_set1 = False
+        timer_set2 = False
 
         # Is the game over?
         game_over = False
@@ -268,6 +301,10 @@ class Game:
         exit_program = False
 
         while (exit_program == False):
+
+            #check if balls are dead
+            dead1 = ball1.isDead()
+            dead2 = ball2.isDead()
 
             #set fps to 60
             clock.tick(60)
@@ -283,11 +320,17 @@ class Game:
             for event in pygame.event.get():
                 if(event.type == pygame.QUIT):
                     exit_program = True
-                if(event.type == pygame.JOYBUTTONUP):
+                if(event.type == SPEEDUP):
                     player1_speed += 1
                     player2_speed += 1
-
-
+                if(event.type == TIMER):
+                    timer += .01
+                if(dead1 == True):
+                    if(event.type == RESPAWNTIMER1):
+                        respawn_timer_1 += 1
+                if(dead2 == True):
+                    if(event.type == RESPAWNTIMER2):
+                        respawn_timer_2 += 1
             #return an array of all keys pressed during each cycle
             pressed = pygame.key.get_pressed()
 
@@ -301,16 +344,51 @@ class Game:
             if(pressed[ord("l")] == 1):
                 player2.move("right")
 
-            #update ball and speed if game is not over
-            if (game_over == False):
-                ball1.update()
-                ball2.update()
-                player1.speedUp(player1_speed)
-                player2.speedUp(player2_speed)
-                ball1.speedUp(player1_speed)
-                ball2.speedUp(player2_speed)
 
-            if game_over:
+            if (game_over == False):
+
+                #update balls
+                if(dead1 == True):
+                    if(timer_set1 == False):
+                        pygame.time.set_timer(RESPAWNTIMER1, 1000)
+                        timer_set1 = True
+                    if(respawn_timer_1 == 5):
+                        ball1.respawn()
+                        player1_speed = 5
+                        timer_set1 = False
+                        respawn_timer_1 = 0
+                else:
+                    ball1.update()
+                    player1.speedUp(player1_speed)
+                    ball1.speedUp(player1_speed)
+
+                if(dead2 == True):
+                    if(timer_set2 == False):
+                        pygame.time.set_timer(RESPAWNTIMER2, 1000)
+                        timer_set2 = True
+                    if(respawn_timer_2 == 5):
+                        ball2.respawn()
+                        player2_speed = 5
+                        timer_set2 = False
+                        respawn_timer_2 = 0
+                else:
+                    ball2.update()
+                    player2.speedUp(player2_speed)
+                    ball2.speedUp(player2_speed)
+
+
+                #draw timer
+                label = font.render(str(timer)[:len(str(round(timer))) + 3], 1, white)
+                screen.blit(label, (screenwidth - 100, 30))
+                if(dead1):
+                    label1 = font2.render(str(5 - respawn_timer_1), 1, white)
+                    screen.blit(label1, (block_width + screenwidth/4 - 50, 325))
+                if(dead2):
+                    label2 = font2.render(str(5 - respawn_timer_2), 1, white)
+                    screen.blit(label2, (2*block_width + screenwidth*3/4 - 50, 325))
+
+
+            if (game_over == True):
                 text = font.render("Game Over", True, white)
                 textpos = text.get_rect(centerx=background.get_width()/2)
                 textpos.top = 300
