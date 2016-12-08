@@ -1,12 +1,13 @@
 import math
 import pygame
-import random
 
-#block dimensions
+pygame.init()
+
+
 block_width = 23
 block_height = 15
 
-#RGB color values
+
 white = (255, 255, 255)
 black = (0, 0, 0)
 red = (255, 0, 0)
@@ -15,12 +16,93 @@ green = (0, 255, 0)
 yellow = (255, 255, 0)
 magenta = (255, 0, 255)
 
+display_width = 800
+display_height = 600
+
+button_width = 200
+button_height = 50
+
+dark_red = (200,0,0)
+dark_green = (0, 200, 0)
+dark_blue = (0, 0, 200)
+
+bright_red = (255, 0, 0)
+bright_green = (0, 255, 0)
+bright_blue = (0, 0, 255)
+
+class Background(pygame.sprite.Sprite):
+    def __init__(self, image_file, location):
+        pygame.sprite.Sprite.__init__(self)  #call Sprite initializer
+        self.image = pygame.image.load(image_file)
+        self.rect = self.image.get_rect()
+        self.rect.left, self.rect.top = location
+
+
+def text_objects(text, font):
+    textSurface = font.render(text, True, black)
+    return textSurface, textSurface.get_rect()
+
+
+
+def game_intro():
+    pygame.init()
+    intro = True
+
+    while intro:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+
+        gameDisplay = pygame.display.set_mode((display_width,display_height))
+        pygame.display.set_caption('Arkanoid')
+        clock = pygame.time.Clock()
+
+        gameDisplay.fill(white)
+        largeText = pygame.font.Font('freesansbold.ttf', 70)
+        TextSurf, TextRect = text_objects('Main Menu', largeText)
+        TextRect.center = ((display_width/2),(display_height/3))
+        gameDisplay.blit(TextSurf, TextRect)
+        # Fills the background with white and creates a main menu message in the center
+        # of the screen
+
+
+        def button(text, font_size, fontType, x, y, bw, bh, ic, ac, action=None):
+            mouse = pygame.mouse.get_pos()
+            click = pygame.mouse.get_pressed()
+
+
+            if x + bw > mouse[0] > x and y + bh > mouse[1] > y:
+                pygame.draw.rect(gameDisplay, ac,(x,y,bw,bh))
+                if click[0] == 1:
+                    if text == "Start":
+                        game = Game()
+                    elif text == "Quit":
+                        pygame.quit()
+                    elif text == "High Scores":
+                        # Go to json file
+                        print("HI")
+            else:
+                pygame.draw.rect(gameDisplay, ic,(x,y,bw,bh))
+
+            textSize = pygame.font.Font(fontType, font_size)
+            textSurf, textRect = text_objects(text, textSize)
+            textRect.center = (x + button_width / 2, y + button_height / 2)
+            gameDisplay.blit(textSurf, textRect)
+
+        button("Start", 20, "freesansbold.ttf", (display_width/2 - button_width / 2), display_height*(4/10), button_width, button_height, dark_green, bright_green)
+        button("Quit", 20, "freesansbold.ttf", (display_width/2 - button_width / 2), display_height*(6/10), button_width, button_height, dark_red, bright_red)
+        button("High Scores", 20, "freesansbold.ttf", (display_width/2 - button_width / 2), display_height*(8/10), button_width, button_height, dark_blue, bright_blue)
+
+        pygame.display.update()
+        clock.tick(15)
+
 class Ball(pygame.sprite.Sprite):
 
     def __init__(self, player):
 
         self.y = 180
-        self.speed = 5 #starting speed (in pixels per cycle)
+        self.speed = 10 #starting speed (in pixels per second)
         self.direction = 200 #in degrees
         self.player = player
         self.width = 10
@@ -45,7 +127,7 @@ class Ball(pygame.sprite.Sprite):
         if (player == 1):
             self.x = 0
         else:
-            self.x = self.screenwidth/2 + block_width
+            self.x = self.screenwidth/2
 
         self.rect.x = self.x
         self.rect.y = self.y
@@ -55,8 +137,6 @@ class Ball(pygame.sprite.Sprite):
         self.direction -= diff
 
     def update(self):
-
-        #angles are handles in radians, must convert
         direction_radians = math.radians(self.direction)
 
         # Change the position (x and y) according to the speed and direction
@@ -80,44 +160,28 @@ class Ball(pygame.sprite.Sprite):
                 self.x = 1
         else:
 
-            if(self.x <= self.screenwidth/2 + block_width):
+            if(self.x <= self.screenwidth/2):
                 self.direction = (360 - self.direction) % 360
-                self.x = 1 + self.screenwidth/2 + block_width
+                self.x = 1 + self.screenwidth/2
 
 
         # Do we bounce of the right side of the screen?
         if(self.player == 1):
 
-            if(self.x > self.screenwidth/2 - self.width - block_width):
+            if(self.x > self.screenwidth/2 - self.width):
                 self.direction = (360 - self.direction) % 360
-                self.x = self.screenwidth/2 - self.width - 1 - block_width
+                self.x = self.screenwidth/2 - self.width - 1
 
         else:
             if(self.x > self.screenwidth - self.width):
                 self.direction = (360 - self.direction) % 360
                 self.x = self.screenwidth - self.width - 1
 
-    def isDead(self):
-            # fall off the bottom of the screen?
+        # fall off the bottom of the screen?
         if(self.y > 600):
             return True
         else:
             return False
-
-    def speedUp(self, speed):
-        #update speed:
-        if (self.player == 1):
-            self.speed = speed
-        else:
-            self.speed = speed
-
-    def respawn(self):
-        self.y = 180
-        self.direction = 200
-        if(self.player == 1):
-            self.x = 0
-        else:
-            self.x = self.screenwidth/2 + block_width
 
 class Block(pygame.sprite.Sprite):
 
@@ -149,18 +213,40 @@ class Paddle(pygame.sprite.Sprite):
         self.screenheight = pygame.display.get_surface().get_height()
         self.screenwidth = pygame.display.get_surface().get_width()
 
-        self.speed = 5
+        if (player == 1):
+            self.speed = 10
+        else:
+            self.speed = 10
 
         if(player == 1):
 
-            self.rect.x = block_width + self.screenwidth/4 - self.width
+            self.rect.x = self.screenwidth/4 - self.width
             self.rect.y = self.screenheight - self.height
 
         elif(player == 2):
 
-            self.rect.x = 2*block_width + self.screenwidth*3/4 - self.width
+            self.rect.x = self.screenwidth*3/4 - self.width
             self.rect.y = self.screenheight - self.height
 
+    def update(self):
+        # Make sure we don't push the player paddle
+        # off the right side of the screen
+        if(player == 1):
+            if self.rect.x > self.screenwidth/2 - self.width:
+                self.rect.x = self.screenwidth/2 - self.width
+
+        else:
+            if self.rect.x > self.screenwidth - self.width:
+                self.rect.x = self.screenwidth - self.width
+
+        #make sure we don't push the paddle off the left side of the screen
+        if(player == 1):
+            if(self.rect.x < 0):
+                self.rect.x = 0
+
+        else:
+            if(self.rect.x < self.screenwidth/2):
+                self.rect.x = self.screenwidth/2
 
     def move(self, dir):
         #move player left
@@ -171,17 +257,17 @@ class Paddle(pygame.sprite.Sprite):
                 else:
                     self.rect.x = 0
             else:
-                if(self.rect.x - self.speed >= self.screenwidth/2 + block_width):
+                if(self.rect.x - self.speed >= self.screenwidth/2):
                     self.rect.x -= self.speed
                 else:
-                    self.rect.x = self.screenwidth/2 + block_width
+                    self.rect.x = self.screenwidth/2
 
         if (dir == "right"):
             if (self.player == 1):
-                if(self.rect.x + self.speed <= self.screenwidth/2 - self.width - block_width):
+                if(self.rect.x + self.speed <= self.screenwidth/2 - self.width):
                     self.rect.x += self.speed
                 else:
-                    self.rect.x = self.screenwidth/2 - self.width - block_width
+                    self.rect.x = self.screenwidth/2 - self.width
 
             else:
                 if(self.rect.x + self.speed <= self.screenwidth - self.width):
@@ -189,13 +275,6 @@ class Paddle(pygame.sprite.Sprite):
                 else:
                     self.rect.x = self.screenwidth - self.width
         #move the player left or right
-
-    def speedUp(self, speed):
-        #update speed:
-        if (self.player == 1):
-            self.speed = speed
-        else:
-            self.speed = speed
 
 class Game:
 
@@ -208,11 +287,9 @@ class Game:
         screen = pygame.display.set_mode([800, 600])
         pygame.display.set_caption('Steven A Moore')
         font = pygame.font.Font(None, 36)
-        font2 = pygame.font.Font(None, 64)
         background = pygame.Surface(screen.get_size())
         screenheight = pygame.display.get_surface().get_height()
         screenwidth = pygame.display.get_surface().get_width()
-        pygame.key.set_repeat(2, 10)
 
         #define sprite groups
         blocks1 = pygame.sprite.Group()
@@ -225,12 +302,10 @@ class Game:
         player1 = Paddle(1)
         allsprites.add(player1)
         players.add(player1)
-        player1_speed = 5
 
         player2 = Paddle(2)
         allsprites.add(player2)
         players.add(player2)
-        player2_speed = 5
 
         #create balls
         ball1 = Ball(1)
@@ -243,56 +318,25 @@ class Game:
 
         #create blocks
         # The top of the block (y position)
-        top1 = 80
-        top2 = 80
+        top = 80
 
         # Number of blocks to create
-        blockcount = 15
+        blockcount = 16
 
-        colors1 = [red, blue, green, yellow, magenta]
-        random.shuffle(colors1)
-        colors2 = [red, blue, green, yellow, magenta]
-        random.shuffle(colors2)
-
-        for row in colors1:
+        for row in [red, blue, green, yellow, magenta]:
             for column in range(0, blockcount):
                 # Create a block (color,x,y)
-                block = Block(1, row, column * (block_width + 2) + 1, top1)
+                block = Block(1, row, column * (block_width + 2) + 1, top)
                 blocks1.add(block)
                 allsprites.add(block)
-            top1 += block_height + 2
-
-        for row in colors2:
-            for column in range(0, blockcount):
-                block = Block(2, row, block_width + screenwidth/2 +  column * (block_width + 2) + 1, top2)
+                block = Block(2, row, screenwidth/2 +  column * (block_width + 2) + 1, top)
                 blocks2.add(block)
                 allsprites.add(block)
             #move next row down
-            top2 += block_height + 2
+            top += block_height + 2
 
         #create clock to limit speed
         clock = pygame.time.Clock()
-
-        #create timer to keep track of highscores
-        timer = 0
-
-        #create respawn timers
-        respawn_timer_1 = 0
-        respawn_timer_2 = 0
-
-        #sends a speedup event every  5 seconds (5000 milliseconds)
-        SPEEDUP = pygame.USEREVENT+1
-        pygame.time.set_timer(SPEEDUP, 10000)
-
-        #sends an event every 10 milliseconds for the timer
-        TIMER = pygame.USEREVENT+2
-        pygame.time.set_timer(TIMER, 10)
-
-        #define timers for ball respawn
-        RESPAWNTIMER1 = pygame.USEREVENT + 3
-        RESPAWNTIMER2 = pygame.USEREVENT + 4
-        timer_set1 = False
-        timer_set2 = False
 
         # Is the game over?
         game_over = False
@@ -302,93 +346,40 @@ class Game:
 
         while (exit_program == False):
 
-            #check if balls are dead
-            dead1 = ball1.isDead()
-            dead2 = ball2.isDead()
-
-            #set fps to 60
-            clock.tick(60)
+            #set fps to 30
+            clock.tick(30)
 
             #clear screen
             screen.fill(black)
-
-            #draw dividing line
-            pygame.draw.line(screen, white, (screenwidth/2 - block_width, 0), (screenwidth/2 - block_width, screenheight), 1)
-            pygame.draw.line(screen, white, (screenwidth/2 + block_width, 0), (screenwidth/2 + block_width, screenheight), 1)
 
             # Process the events in the game
             for event in pygame.event.get():
                 if(event.type == pygame.QUIT):
                     exit_program = True
-                if(event.type == SPEEDUP):
-                    player1_speed += 1
-                    player2_speed += 1
-                if(event.type == TIMER):
-                    timer += .01
-                if(dead1 == True):
-                    if(event.type == RESPAWNTIMER1):
-                        respawn_timer_1 += 1
-                if(dead2 == True):
-                    if(event.type == RESPAWNTIMER2):
-                        respawn_timer_2 += 1
-            #return an array of all keys pressed during each cycle
-            pressed = pygame.key.get_pressed()
-
-            #determine which keys are pressed and move accordingly
-            if(pressed[ord("a")] == 1):
+                elif(event.type == pygame.KEYDOWN):
+                    if(event.key == ord("a")):
+                        player1.move("left")
+                    if(event.key == ord("d")):
+                        player1.move("right")
+                    if(event.key == ord("j")):
+                        player2.move("left")
+                    if(event.key == ord("l")):
+                        player2.move("right")
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_a]:
                 player1.move("left")
-            if(pressed[ord("d")] == 1):
+            if keys[pygame.K_d]:
                 player1.move("right")
-            if(pressed[ord("j")] == 1):
+            if keys[pygame.K_j]:
                 player2.move("left")
-            if(pressed[ord("l")] == 1):
+            if keys[pygame.K_l]:
                 player2.move("right")
-
-
+            #update ball if game is not over
             if (game_over == False):
+                ball1.update()
+                ball2.update()
 
-                #update balls
-                if(dead1 == True):
-                    if(timer_set1 == False):
-                        pygame.time.set_timer(RESPAWNTIMER1, 1000)
-                        timer_set1 = True
-                    if(respawn_timer_1 == 5):
-                        ball1.respawn()
-                        player1_speed = 5
-                        timer_set1 = False
-                        respawn_timer_1 = 0
-                else:
-                    ball1.update()
-                    player1.speedUp(player1_speed)
-                    ball1.speedUp(player1_speed)
-
-                if(dead2 == True):
-                    if(timer_set2 == False):
-                        pygame.time.set_timer(RESPAWNTIMER2, 1000)
-                        timer_set2 = True
-                    if(respawn_timer_2 == 5):
-                        ball2.respawn()
-                        player2_speed = 5
-                        timer_set2 = False
-                        respawn_timer_2 = 0
-                else:
-                    ball2.update()
-                    player2.speedUp(player2_speed)
-                    ball2.speedUp(player2_speed)
-
-
-                #draw timer
-                label = font.render(str(timer)[:len(str(round(timer))) + 3], 1, white)
-                screen.blit(label, (screenwidth - 100, 30))
-                if(dead1):
-                    label1 = font2.render(str(5 - respawn_timer_1), 1, white)
-                    screen.blit(label1, (block_width + screenwidth/4 - 50, 325))
-                if(dead2):
-                    label2 = font2.render(str(5 - respawn_timer_2), 1, white)
-                    screen.blit(label2, (2*block_width + screenwidth*3/4 - 50, 325))
-
-
-            if (game_over == True):
+            if game_over:
                 text = font.render("Game Over", True, white)
                 textpos = text.get_rect(centerx=background.get_width()/2)
                 textpos.top = 300
@@ -436,6 +427,6 @@ class Game:
 
 
 def main():
-    game = Game()
+    Game_intro = game_intro()
 
 main()
