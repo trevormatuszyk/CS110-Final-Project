@@ -92,10 +92,10 @@ class Intro:
                 screen.blit(text_label, text_label_rect)
 
 
-            button("Start", (screenwidth/2 - button_width / 2), screenheight*(4/10), button_width, button_height, dark_green, bright_green, Game)
-            button("Quit", (screenwidth/2 - button_width / 2), screenheight*(6/10), button_width, button_height, dark_red, bright_red, game_quit)
-            button("High Scores", (screenwidth/2 - button_width / 2), screenheight*(8/10), button_width, button_height, dark_blue, bright_blue, High)
-
+            button("Start", 100, 250, button_width, button_height, dark_green, bright_green, Game)
+            button("Quit", 500, 250, button_width, button_height, dark_red, bright_red, game_quit)
+            button("High Scores", 100, 400, button_width, button_height, dark_blue, bright_blue, High)
+            button("Reset High Scores", 500, 400, (button_width + 15), button_height, yellow, bright_yellow, Reset)
 
             pygame.display.update()
             clock.tick(15)
@@ -117,8 +117,8 @@ class High:
         high = True
 
         if(os.path.isfile("highscores.json") == False):
-            json_dict = {'10': 375, '5': 200, '9': 300, '6': 210, '1': 100,
-            '2': 125, '4': 175, '7': 220, '3': 150, '8': 275}
+            json_dict = {'10': 325, '5': 200, '9': 300, '6': 225, '1': 100,
+            '2': 125, '4': 175, '7': 250, '3': 150, '8': 275}
             json_file = open("highscores.json", "w")
             json_file.write(str(json_dict))
             json_file.close()
@@ -162,8 +162,7 @@ class High:
                 text_label_rect.center = (x + width/2, y + height/2)
                 screen.blit(text_label, text_label_rect)
 
-            button("Reset High Scores", (screenwidth/2 - button_width / 2), screenheight*(7/10), button_width, button_height, yellow, bright_yellow, Reset)
-            button("Back", (screenwidth/2 - button_width / 2), screenheight*(8/10), button_width, button_height, dark_blue, bright_blue, Intro)
+            button("Back", (screenwidth/2 - button_width / 2), screenheight*(8/10), button_width + 20, button_height, dark_blue, bright_blue, Intro)
 
             accum2 = 0
             for i in [(h1,h6),(h2,h7),(h3,h8),(h4,h9),(h5,h10)]:
@@ -177,16 +176,13 @@ class High:
                 screen.blit(text2, text_rect2)
                 accum2+=1
 
-
-
-
             pygame.display.update()
             clock.tick(15)
 
 class Reset:
     def __init__(self):
-        json_dict = {'10': 375, '5': 200, '9': 300, '6': 210, '1': 100,
-        '2': 125, '4': 175, '7': 220, '3': 150, '8': 275}
+        json_dict = {'10': 325, '5': 200, '9': 300, '6': 225, '1': 100,
+        '2': 125, '4': 175, '7': 250, '3': 150, '8': 275}
         json_file = open("highscores.json", "w")
         json_file.write(str(json_dict))
         json_file.close()
@@ -580,6 +576,12 @@ class Game:
                     text_rect.center = (screenwidth*3/4, 325)
                 screen.blit(text, text_rect)
                 if (gameover_timer >= 5):
+                    if(os.path.isfile("highscores.json") == False):
+                        json_dict = {'10': 325, '5': 200, '9': 300, '6': 225, '1': 100,
+                        '2': 125, '4': 175, '7': 250, '3': 150, '8': 275}
+                        json_file = open("highscores.json", "w")
+                        json_file.write(str(json_dict))
+                        json_file.close()
                     json_file = open("highscores.json")
                     json_str = json_file.read()
                     json_dict = ast.literal_eval(json_str)
