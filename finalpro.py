@@ -32,6 +32,7 @@ class Intro:
 
     def __init__(self):
         pygame.init()
+        #Creates the screen and the background
         intro = True
         screen = pygame.display.set_mode([800, 600])
         pygame.display.set_caption('2-Player Arkanoid')
@@ -48,6 +49,7 @@ class Intro:
         button_height = 50
 
         def game_quit():
+            # Quits the game
             pygame.quit
             quit()
 
@@ -75,6 +77,9 @@ class Intro:
 
 
             def button(text, x, y, width, height, color1, color2, action=None):
+                # Button function
+                # Recieves the position, width, height, standing color, and the color while the mouse is hovering on the button.
+                # Additionally, if the button has a function attached, that can be included
                 mouse = pygame.mouse.get_pos()
                 click = pygame.mouse.get_pressed()
 
@@ -91,7 +96,7 @@ class Intro:
 
                 screen.blit(text_label, text_label_rect)
 
-
+            # Creates the menu buttons
             button("Start", 100, 250, button_width, button_height, dark_green, bright_green, Game)
             button("Quit", 500, 250, button_width, button_height, dark_red, bright_red, game_quit)
             button("High Scores", 100, 400, button_width, button_height, dark_blue, bright_blue, High)
@@ -336,7 +341,6 @@ class Paddle(pygame.sprite.Sprite):
 
 
     def move(self, dir):
-        #move player left
         if (dir == "left"):
             if(self.player == 1):
                 if(self.rect.x - self.speed >= 0):
